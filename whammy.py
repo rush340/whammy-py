@@ -8,16 +8,16 @@ class WhammyInterface(object):
     '''
     Interface for sending notes to the Whammy pedal
 
-    HALF_STEPS_TO_POSITION maps # of half steps above root to a pedal position MIDI CC 
+    SEMITONES_TO_POSITION maps # of semitones above root to a pedal position MIDI CC 
     value (0-127) for octave up mode.
-    For example, if E is played, HALF_STEPS_TO_POSITION[3] will be G
+    For example, if E is played, SEMITONES_TO_POSITION[3] will be G
 
     I determined these values by playing an open E string into the Whammy
     into a strobe turner.
 
     Some notes may be slightly flat or sharp because of the low 127 step resolution.
     '''
-    HALF_STEPS_TO_POSITION = [0, 10, 21, 31, 42, 53, 63, 74, 84, 95, 105, 116, 127]
+    SEMITONES_TO_POSITION = [0, 10, 21, 31, 42, 53, 63, 74, 84, 95, 105, 116, 127]
     PEDAL_POSITION_CC = 11
 
     def __init__(self, outport, channel=0):
@@ -41,9 +41,9 @@ class WhammyInterface(object):
         '''
         Set the Whammy to a note
 
-        note: note in half steps above root (0-12, where 0 is the root and 12 is an octave up)
+        note: note in semitones above root (0-12, where 0 is the root and 12 is an octave up)
         '''
-        position = self.HALF_STEPS_TO_POSITION[note]
+        position = self.SEMITONES_TO_POSITION[note]
         midi_msg = mido.Message('control_change', control=self.PEDAL_POSITION_CC, value=position)
         self.outport.send(midi_msg)
 
@@ -99,7 +99,7 @@ class WhammyArp(object):
     def __init__(self, interface, notes, pattern, bpm):
         '''
         interface: A WhammyInterface object for the pedal you want to control.
-        notes: notes to be played, defined as a list of unique half steps from the root (0-12)
+        notes: notes to be played, defined as a list of unique semitones from the root (0-12)
         bpm: Beats per minute. Notes will be played as quarter notes.
         '''
         self.interface = interface

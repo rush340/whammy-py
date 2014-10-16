@@ -1,7 +1,7 @@
 
 import mido
 import time
-import random
+import arpeggiator as arp
 
 
 class WhammyInterface(object):
@@ -48,55 +48,8 @@ class WhammyInterface(object):
         self.outport.send(midi_msg)
 
 
-class WhammyArpPattern(object):
-    UP = 1
-    DOWN = 2
-    UPDOWN = 3
-    ORDER = 4
-    RANDOM = 5
-
-    def __init__(self, notes, pattern):
-        self.notes = notes  # TODO sanitize: eliminate duplicate notes
-        self.pattern = pattern
-        self._current_step = 0
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        note = self._sequence[self._current_step]
-        self._current_step += 1
-        if self._current_step >= len(self._sequence):
-            if self.pattern == self.RANDOM:
-                self.update_sequence()
-            self._current_step = 0
-        return note
-
-    @property
-    def pattern(self):
-        return self._pattern
-
-    @pattern.setter
-    def pattern(self, value):
-        self._pattern = value
-        self.update_sequence()
-
-    def update_sequence(self):
-        if self.pattern == self.RANDOM:
-            self._sequence = self.notes[:]
-            random.shuffle(self._sequence)
-        elif self.pattern == self.UP:
-            self._sequence = sorted(self.notes)
-        elif self.pattern == self.UPDOWN:
-            self._sequence = sorted(self.notes) + list(reversed(sorted(self.notes)))[1:-1]
-        elif self.pattern == self.DOWN:
-            self._sequence = reversed(sorted(self.notes))
-        elif self.pattern == self.ORDER:
-            self._sequence = self.notes
-        self._current_step = 0
-
 class WhammyArp(object):
-    def __init__(self, interface, notes, pattern, bpm):
+    def __init__(self, interface, notes, pattern_name, bpm):
         '''
         interface: A WhammyInterface object for the pedal you want to control.
         notes: notes to be played, defined as a list of unique semitones from the root (0-12)
@@ -104,7 +57,7 @@ class WhammyArp(object):
         '''
         self.interface = interface
         self.notes = notes
-        self.pattern = WhammyArpPattern(notes, pattern)
+        self.arp = arp.arpeggiators[pattern_name](notes)
         self.bpm = bpm
 
     @staticmethod
@@ -124,5 +77,5 @@ class WhammyArp(object):
         self.step_time = self.bpm_to_seconds_per_quarter(value)
     
     def play_next_step(self):
-        self.interface.send_step(self.pattern.next())
+        self.interface.send_note(self.arp.next())
         time.sleep(self.step_time)
